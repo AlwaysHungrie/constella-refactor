@@ -73,7 +73,7 @@ const config: Config = {
           items: [
             {
               label: 'Quickstart',
-              to: '/docs/quickstart',
+              to: '/category/quickstart',
             },
             {
               label: 'Wallet',
@@ -119,6 +119,18 @@ const config: Config = {
       darkTheme: prismThemes.dracula,
     },
   } satisfies Preset.ThemeConfig,
+
+  // BOTH POSTHOG CONFIG VARIABLES ARE PUBLIC
+  plugins: [
+    [
+      'posthog-docusaurus',
+      {
+        apiKey: 'phc_QgawuhmdSI0cZfaKinC2ngMsTD43i9OEV9aEzskhaQr',
+        appUrl: 'https://eu.i.posthog.com',
+        enableInDevelopment: false,
+      },
+    ],
+  ],
 };
 
 export default config;
