@@ -13,6 +13,11 @@
 
   --color-brand-500: #ff3333;
   --color-brand-600: #ff4444;
+
+  --color-textgreen: #05D505;
+  --color-brandgreen: #004400;
+
+  --color-textblack: #001800;
 }
 
 @media (prefers-color-scheme: dark) {

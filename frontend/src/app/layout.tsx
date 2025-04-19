@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Courier_Prime } from 'next/font/google'
 import './globals.css'
+import AllProviders from '@/providers/allProviders'
 
 const courierPrime = Courier_Prime({
   variable: '--font-courier-prime',
@@ -23,7 +24,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${courierPrime.variable} antialiased`}>{children}</body>
+      <body className={`${courierPrime.variable} antialiased`}>
+        <AllProviders>{children}</AllProviders>
+      </body>
     </html>
   )
 }
