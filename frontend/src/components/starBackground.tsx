@@ -1,5 +1,6 @@
 'use client'
 
+import { useDialogStore } from '@/stores/dialogStore'
 import React, { useCallback, useEffect, useRef } from 'react'
 
 // Constants
@@ -70,7 +71,10 @@ function drawStar(
   }
 }
 
-export default function StarBackground({ isPaused }: { isPaused: boolean }) {
+export default function StarBackground() {
+  const { isOpen } = useDialogStore()
+  const isPaused = !!isOpen
+
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null)
   const dimensionsRef = useRef({ width: 0, height: 0 })

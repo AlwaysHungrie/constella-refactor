@@ -13,8 +13,10 @@
     "next": "15.3.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-draggable": "^4.4.6",
     "react-icons": "^5.5.0",
-    "viem": "^2.27.2"
+    "viem": "^2.27.2",
+    "zustand": "^5.0.3"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
