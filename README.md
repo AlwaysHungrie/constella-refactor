@@ -9,3 +9,4 @@ Constella is a TEE wallet that can only be accessed by an autonomous agent. It c
 - `docs/` - Usage Instructions and more information about the project, design, implementation details.
 - `frontend/` - The frontend for main constella wallet
 - `backend/` - The backend for wallet generation, execution etc (not to be run in nitro enclave)
+- `nitro-verifier/` - Tool to verify any server is running inside a nitro enclave by verifying the AWS Nitro Enclave Attestation Document

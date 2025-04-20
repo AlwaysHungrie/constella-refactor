@@ -11,6 +11,7 @@ const ITEMS = [
   },
   {
     item: 'Docs',
+    href: 'https://docs.constella.one',
   },
 ]
 
@@ -40,13 +41,24 @@ export default function Header() {
       <div className="flex text-brand-600">
         {ITEMS.map((item, index) => (
           <Fragment key={item.item}>
-            <div
-              key={item.item}
-              className="cursor-pointer hover:opacity-80"
+            {item.href ? (
+              <a
+                href={item.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="cursor-pointer hover:opacity-80"
+              >
+                {item.item}
+              </a>
+            ) : (
+              <div
+                key={item.item}
+                className="cursor-pointer hover:opacity-80"
               onClick={() => onClickOption(item.item)}
-            >
-              {item.item}
-            </div>
+              >
+                {item.item}
+              </div>
+            )}
             {index !== ITEMS.length - 1 && (
               <div className="text-brand-500 mx-2">|</div>
             )}
