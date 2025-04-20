@@ -7,13 +7,13 @@ const { prisma } = config
 
 export const connectSchema = Joi.object({
   address: Joi.string().required(),
-  privyUserId: Joi.string().required(),
+  privyAccessToken: Joi.string().required(),
 })
 
 export const handleConnect = async (req: Request, res: Response) => {
-  const { address, privyUserId } = req.body
+  const { address, privyAccessToken } = req.body
 
-  const privyUser = await getPrivyUser(privyUserId)
+  const privyUser = await getPrivyUser(privyAccessToken)
   const account = privyUser.linked_accounts.find(
     (account: any) => account.address === address
   )
@@ -30,7 +30,7 @@ export const handleConnect = async (req: Request, res: Response) => {
     user = await prisma.user.create({
       data: {
         userAddress: address,
-        privyUserId: privyUserId,
+        privyUserId: privyUser.id,
       },
     })
   }
