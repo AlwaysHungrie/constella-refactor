@@ -7,12 +7,16 @@ import { authorizedDeleteRequest } from '@/utils/api'
 import { useWalletStore, Wallet } from '@/stores/walletStore'
 import { useState } from 'react'
 import { Checkbox } from '../checkbox'
+import { useDialogStore } from '@/stores/dialogStore'
+
 export const EditWalletForm = ({ wallet }: { wallet: Wallet }) => {
   const { token } = useUserStore()
   const { deleteWallet } = useWalletStore()
+  const { onOpen } = useDialogStore()
 
   const [allowDelete, setAllowDelete] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+
   // const handleCreateWallet = async () => {
   //   if (!token) return
   //   setIsLoading(true)
@@ -44,7 +48,10 @@ export const EditWalletForm = ({ wallet }: { wallet: Wallet }) => {
 
   const handleCopyAddress = () => {
     navigator.clipboard.writeText(wallet.walletAddress)
-    alert('Address copied to clipboard')
+    onOpen(
+      'Address Copied',
+      `\`\`\`${wallet.walletAddress}\`\`\` has been copied to your clipboard`
+    )
   }
 
   return (

@@ -3,6 +3,7 @@
 import Draggable from 'react-draggable'
 import { useRef, useState, useEffect } from 'react'
 import { useDialogStore } from '@/stores/dialogStore'
+import Markdown from 'react-markdown'
 
 export interface DialogContent {
   TITLE: string
@@ -10,7 +11,7 @@ export interface DialogContent {
 }
 
 export const Dialog = () => {
-  const { isOpen, title, description, onClose } = useDialogStore()
+  const { isOpen, title, markdownDescription, onClose } = useDialogStore()
 
   const nodeRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
@@ -142,9 +143,7 @@ export const Dialog = () => {
               ref={contentRef}
               className="font-mono text-gray-300 space-y-4 max-h-[60vh] sm:max-h-[300px] overflow-y-auto custom-scrollbar pr-8 pl-2 sm:pl-4 py-3"
             >
-              {description.split('\n').map((line, index) => (
-                <p key={index}>{line}</p>
-              ))}
+              <Markdown>{markdownDescription}</Markdown>
             </div>
             <div
               className="custom-scrollbar-track"

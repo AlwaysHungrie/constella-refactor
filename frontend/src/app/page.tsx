@@ -2,6 +2,7 @@ import StarBackground from '@/components/starBackground'
 import Header from '@/components/header'
 import WidgetContainer from '@/components/widget/widgetContainer'
 import { Dialog } from '@/components/dialog'
+import { Socials } from '@/components/socials'
 
 export default function Home() {
   return (
@@ -12,6 +13,7 @@ export default function Home() {
         <WidgetContainer />
       </div>
       <Dialog />
+      <Socials />
     </div>
   )
 }

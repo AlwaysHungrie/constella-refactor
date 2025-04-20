@@ -5,16 +5,16 @@ import { create } from 'zustand'
 interface DialogStore {
   isOpen: boolean
   title: string
-  description: string
+  markdownDescription: string
   onClose: () => void
-  onOpen: (title: string, description: string) => void
+  onOpen: (title: string, markdownDescription: string) => void
 }
 
 export const useDialogStore = create<DialogStore>((set) => ({
   isOpen: false,
   title: '',
-  description: '',
+  markdownDescription: '',
   onClose: () => set({ isOpen: false }),
-  onOpen: (title: string, description: string) =>
-    set({ isOpen: true, title, description }),
+  onOpen: (title: string, markdownDescription: string) =>
+    set({ isOpen: true, title, markdownDescription }),
 }))
