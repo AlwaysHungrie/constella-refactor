@@ -5,6 +5,7 @@ import { TextInput } from '../textInput'
 import CTAButton from '../ctaButton'
 import useUserStore from '@/stores/userStore'
 import { authorizedPostRequest } from '@/utils/api'
+import { useWalletStore } from '@/stores/walletStore'
 
 const isValidDomain = (domain: string) => {
   const urlRegex = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/
@@ -13,6 +14,7 @@ const isValidDomain = (domain: string) => {
 
 export const CreateWalletForm = () => {
   const { token } = useUserStore()
+  const { addWallet } = useWalletStore()
 
   const [domain, setDomain] = useState('')
   const [systemPrompt, setSystemPrompt] = useState('')
@@ -28,7 +30,9 @@ export const CreateWalletForm = () => {
         domain,
         systemPrompt,
       })
-      console.log(response)
+      addWallet(response)
+      setDomain('')
+      setSystemPrompt('')
     } catch (error) {
       console.error(error)
     } finally {

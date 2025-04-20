@@ -77,7 +77,32 @@ const initDatabaseResources = async (
   await masterClient.query(`DROP SCHEMA IF EXISTS "${schemaName}" CASCADE`)
   await masterClient.query(`DROP DATABASE IF EXISTS "${dbName}"`)
   await masterClient.query(`DROP DATABASE IF EXISTS "${shadowDbName}"`)
-  await masterClient.query(`DROP USER IF EXISTS "${dbUser}"`)
+
+  try {
+    // Revoke privileges from the user in the postgres database
+    await masterClient.query(
+      `REVOKE ALL PRIVILEGES ON DATABASE postgres FROM "${dbUser}"`
+    )
+    await masterClient.query(
+      `REVOKE ALL PRIVILEGES ON SCHEMA public FROM "${dbUser}"`
+    )
+    // Drop default privileges that might have been set
+    await masterClient.query(
+      `ALTER DEFAULT PRIVILEGES REVOKE ALL ON TABLES FROM "${dbUser}"`
+    )
+    await masterClient.query(
+      `ALTER DEFAULT PRIVILEGES REVOKE ALL ON SEQUENCES FROM "${dbUser}"`
+    )
+  } catch (error: any) {
+    console.log('Error while revoking privileges, continuing:', error.message)
+  }
+
+  try {
+    // Finally drop the user
+    await masterClient.query(`DROP USER IF EXISTS "${dbUser}"`)
+  } catch (error: any) {
+    console.log('Error dropping user, continuing:', error.message)
+  }
 
   // Create databases
   await masterClient.query(`CREATE DATABASE "${dbName}"`)
@@ -143,14 +168,84 @@ export const setupRdsDb = async (walletAddress: string, privateKey: string) => {
 }
 
 export async function deleteRdsDb(walletAddress: string, privateKey: string) {
-  const { dbName, shadowDbName, dbUser, schemaName } =
-    getRdsDbCredentials(walletAddress, privateKey)
+  const { dbName, shadowDbName, dbUser, schemaName } = getRdsDbCredentials(
+    walletAddress,
+    privateKey
+  )
   console.log('Deleting RDS database...', dbName, dbUser)
 
   const masterClient = await getClientConfig('postgres', rdsUser, rdsPassword)
-  await masterClient.query(`DROP DATABASE IF EXISTS "${dbName}"`)
-  await masterClient.query(`DROP DATABASE IF EXISTS "${shadowDbName}"`)
-  await masterClient.query(`DROP SCHEMA IF EXISTS "${schemaName}"`)
-  await masterClient.query(`DROP USER IF EXISTS "${dbUser}"`)
-  await masterClient.end()
+
+  try {
+    // First handle all dependencies
+
+    // Terminate any active connections to the databases
+    await masterClient
+      .query(
+        `
+      SELECT pg_terminate_backend(pg_stat_activity.pid)
+      FROM pg_stat_activity
+      WHERE pg_stat_activity.datname IN ('${dbName}', '${shadowDbName}')
+      AND pid <> pg_backend_pid()
+    `
+      )
+      .catch((err: any) =>
+        console.log('Error terminating connections:', err.message)
+      )
+
+    // Drop the databases (this removes most dependencies)
+    await masterClient
+      .query(`DROP DATABASE IF EXISTS "${dbName}"`)
+      .catch((err: any) => console.log('Error dropping main db:', err.message))
+    await masterClient
+      .query(`DROP DATABASE IF EXISTS "${shadowDbName}"`)
+      .catch((err: any) =>
+        console.log('Error dropping shadow db:', err.message)
+      )
+
+    // Handle schema in current database
+    await masterClient
+      .query(`DROP SCHEMA IF EXISTS "${schemaName}" CASCADE`)
+      .catch((err: any) => console.log('Error dropping schema:', err.message))
+
+    // Revoke privileges from the user in the postgres database
+    await masterClient
+      .query(`REVOKE ALL PRIVILEGES ON DATABASE postgres FROM "${dbUser}"`)
+      .catch((err: any) =>
+        console.log('Error revoking db privileges:', err.message)
+      )
+    await masterClient
+      .query(`REVOKE ALL PRIVILEGES ON SCHEMA public FROM "${dbUser}"`)
+      .catch((err: any) =>
+        console.log('Error revoking schema privileges:', err.message)
+      )
+
+    // Remove default privileges that might have been set
+    await masterClient
+      .query(
+        `ALTER DEFAULT PRIVILEGES FOR USER "${rdsUser}" IN SCHEMA public REVOKE ALL ON TABLES FROM "${dbUser}"`
+      )
+      .catch((err: any) =>
+        console.log('Error revoking table privileges:', err.message)
+      )
+    await masterClient
+      .query(
+        `ALTER DEFAULT PRIVILEGES FOR USER "${rdsUser}" IN SCHEMA public REVOKE ALL ON SEQUENCES FROM "${dbUser}"`
+      )
+      .catch((err: any) =>
+        console.log('Error revoking sequence privileges:', err.message)
+      )
+
+    // Wait a bit for changes to propagate
+    await new Promise((resolve) => setTimeout(resolve, 2000))
+
+    // Finally drop the user
+    await masterClient
+      .query(`DROP USER IF EXISTS "${dbUser}"`)
+      .catch((err: any) => console.log('Error dropping user:', err.message))
+  } catch (error) {
+    console.error('Error during database cleanup:', error)
+  } finally {
+    await masterClient.end()
+  }
 }

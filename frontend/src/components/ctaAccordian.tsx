@@ -21,7 +21,7 @@ export const CTAAccordian = ({
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full flex items-center justify-between`}
       >
-        {title}
+        <span className="overflow-hidden text-ellipsis">{title}</span>
         {isOpen ? (
           <HiChevronUp className="w-4 h-4" />
         ) : (

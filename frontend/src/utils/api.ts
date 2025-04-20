@@ -19,3 +19,21 @@ export const authorizedPostRequest = async (
   })
   return response.data
 }
+
+export const authorizedGetRequest = async (token: string, path: string) => {
+  const response = await axios.get(`${API_URL}/api/${path}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+  return response.data
+}
+
+export const authorizedDeleteRequest = async (token: string, path: string) => {
+  const response = await axios.delete(`${API_URL}/api/${path}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+  return response.data
+}

@@ -1,23 +1,11 @@
-import { HiCheck } from 'react-icons/hi2'
 import ConnectWallet from './connectWallet'
 import DisconnectWallet from './disconnectWallet'
 import WalletsContainer from './walletsContainer'
-
-const Checkbox = ({ checked }: { checked: boolean }) => {
-  return (
-    <div className="flex items-center gap-2 bg-black p-1">
-      {checked ? (
-        <HiCheck className="w-3 h-3" />
-      ) : (
-        <div className="w-4 h-4 border border-textgreen rounded-sm" />
-      )}
-    </div>
-  )
-}
+import { Checkbox } from '../checkbox'
 
 export default function WidgetContainer() {
   return (
-    <div className="flex-1 flex flex-col aspect-[3/4] max-h-[calc(100vh-10rem)] py-4">
+    <div className="flex-1 flex flex-col aspect-[3/4] max-h-[calc(100vh-10rem)] max-w-[400px] py-4">
       <div className="flex flex-col flex-1 border border-[#004400] bg-[#e2ebe215] backdrop-blur-[2px] overflow-y-auto px-6 py-4 rounded-lg">
         <div className="flex flex-col gap-2 text-textgreen">
           <div className="text-2xl font-bold mx-auto">Constella Wallet</div>

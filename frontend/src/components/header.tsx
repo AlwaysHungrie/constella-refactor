@@ -7,7 +7,7 @@ const ITEMS = [
     item: 'How it works',
   },
   {
-    item: 'Verify',
+    item: 'Verify Constella',
   },
   {
     item: 'Docs',
