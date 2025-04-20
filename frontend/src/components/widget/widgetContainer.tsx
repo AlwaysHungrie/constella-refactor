@@ -1,6 +1,7 @@
 import { HiCheck } from 'react-icons/hi2'
 import ConnectWallet from './connectWallet'
 import DisconnectWallet from './disconnectWallet'
+import WalletsContainer from './walletsContainer'
 
 const Checkbox = ({ checked }: { checked: boolean }) => {
   return (
@@ -41,6 +42,7 @@ export default function WidgetContainer() {
         </div>
 
         <ConnectWallet />
+        <WalletsContainer />
       </div>
       <DisconnectWallet />
     </div>

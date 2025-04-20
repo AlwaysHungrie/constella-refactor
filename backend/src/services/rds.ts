@@ -41,7 +41,7 @@ const getRdsDbCredentials = (address: string, privateKey: string) => {
 
   return {
     dbName: `${base64Address}_db`,
-    shadowDbName: `${base64Address}_shadow_db`,
+    shadowDbName: `${base64Address}_shadowdb`,
     dbUser: `${base64Address}_user`,
     dbPassword: `${base64PrivateKey}_password`,
     schemaName: `${base64Address}_schema`,
@@ -74,8 +74,10 @@ const initDatabaseResources = async (
   schemaName: string
 ) => {
   // Clean up existing database
+  await masterClient.query(`DROP SCHEMA IF EXISTS "${schemaName}" CASCADE`)
   await masterClient.query(`DROP DATABASE IF EXISTS "${dbName}"`)
   await masterClient.query(`DROP DATABASE IF EXISTS "${shadowDbName}"`)
+  await masterClient.query(`DROP USER IF EXISTS "${dbUser}"`)
 
   // Create databases
   await masterClient.query(`CREATE DATABASE "${dbName}"`)
@@ -115,7 +117,6 @@ export const setupRdsDb = async (walletAddress: string, privateKey: string) => {
     dbPassword,
     schemaName
   )
-  await masterClient.end()
 
   // Wait for the databases to be created
   await new Promise((resolve) => setTimeout(resolve, 1000))
@@ -124,9 +125,15 @@ export const setupRdsDb = async (walletAddress: string, privateKey: string) => {
   await grantPrivileges(dbClient, dbName, dbUser)
   await dbClient.end()
 
-  const shadowDbClient = await getClientConfig(shadowDbName, dbUser, dbPassword)
-  await grantPrivileges(shadowDbClient, shadowDbName, dbUser)
-  await shadowDbClient.end()
+  await new Promise((resolve) => setTimeout(resolve, 1000))
+
+  // TODO: Why is shadowDbClient not working?
+  // const shadowDbClient = await getClientConfig(shadowDbName, dbUser, dbPassword)
+  // await grantPrivileges(shadowDbClient, shadowDbName, dbUser)
+  // await shadowDbClient.end()
+
+  await grantPrivileges(masterClient, shadowDbName, dbUser)
+  await masterClient.end()
 
   return {
     dbName,
