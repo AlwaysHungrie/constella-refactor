@@ -1,34 +1,42 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
+import type { Metadata } from 'next'
+import { Bebas_Neue, Roboto_Flex } from 'next/font/google'
+import './globals.css'
+import { TITLE } from '@/config'
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+const bebasNeue = Bebas_Neue({
+  weight: '400',
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-bebas-neue',
+})
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const robotoFlex = Roboto_Flex({
+  weight: ['400', '500', '700'],
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-roboto-flex',
+})
 
 export const metadata: Metadata = {
-  title: "Nitro Verifier",
-  description: "Verify Nitro Enclave Attestation Document issued",
-};
+  title: TITLE.constella.title,
+  description: TITLE.constella.description,
+  icons: {
+    icon: '/pineapple.svg',
+  },
+}
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${bebasNeue.className} ${robotoFlex.className} antialiased`}
       >
         {children}
       </body>
     </html>
-  );
+  )
 }
