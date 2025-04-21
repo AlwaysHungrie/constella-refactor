@@ -1,5 +1,5 @@
-// const SERVER_URL = 'https://nitro-verifier.pineappl.xyz/api'
-export const SERVER_URL = 'http://localhost:4001'
+export const SERVER_URL = 'https://nitro-verifier.pineappl.xyz'
+// export const SERVER_URL = 'http://localhost:4001'
 
 export const TOOL_MODES = ['constella', 'tool', 'api'] as const
 export type ToolMode = (typeof TOOL_MODES)[number]
