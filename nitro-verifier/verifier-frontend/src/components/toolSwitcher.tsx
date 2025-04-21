@@ -4,6 +4,7 @@ import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
 const TabLabels = {
   constella: 'Constella',
   tool: 'Nitro Enclave',
+  api: 'API',
 }
 
 export default function ToolSwitcher({
@@ -20,11 +21,13 @@ export default function ToolSwitcher({
           defaultValue={toolMode}
           onValueChange={(value) => setToolMode(value as ToolMode)}
         >
-          <TabsList
-            className="shadow-[0_3px_10px_rgb(0,0,0,0.2)]"
-          >
+          <TabsList className="shadow-[0_3px_10px_rgb(0,0,0,0.2)]">
             {TOOL_MODES.map((mode) => (
-              <TabsTrigger key={mode} value={mode}>
+              <TabsTrigger
+                key={mode}
+                value={mode}
+                className="hover:text-gray-500 cursor-pointer"
+              >
                 {TabLabels[mode]}
               </TabsTrigger>
             ))}

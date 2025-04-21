@@ -2,26 +2,35 @@
 
 import { ToolMode } from '@/config'
 import ContentCard from './contentCard'
-
+import { DEFAULT_ATTESATION, DEFAULT_DOMAIN } from '@/config/constellaDefaults'
 export default function AttestationFetcher({
   toolMode,
   domain,
   setDomain,
   setAttestation,
+  setAttestationISOTime,
 }: {
   toolMode: ToolMode
   domain: string
   setDomain: (domain: string) => void
   setAttestation: (attestation: string) => void
+  setAttestationISOTime: (attestationISOTime: string) => void
 }) {
   const fetchAttestation = async () => {
     if (!domain) return
+    if (toolMode === 'constella' && domain === DEFAULT_DOMAIN) {
+      setAttestation(DEFAULT_ATTESATION)
+      setAttestationISOTime(new Date().toISOString())
+      return
+    }
     try {
       const response = await fetch(domain)
-      const data = await response.json()
-      setAttestation(data.attestation)
+      const body = await response.text()
+      setAttestation(body)
+      setAttestationISOTime(new Date().toISOString())
     } catch (error) {
       console.error(error)
+      alert('Error fetching attestation, please check the domain and try again')
     }
   }
 
@@ -76,6 +85,25 @@ export default function AttestationFetcher({
         >
           Request Attestation
         </button>
+
+        {toolMode === 'constella' && (
+          <>
+            <p className="leading-5">
+              Constella Backend returns an &quot;Attestation Certificate&quot;
+              which can be verified using this tool. Successful verification of
+              the certificate guarantees that:
+            </p>
+            <ol className="list-decimal pl-5">
+              <li className="">
+                Constella backend is running inside a nitro enclave
+              </li>
+              <li className="">
+                Code running inside the enclave is the exact same code as
+                published on its github repository
+              </li>
+            </ol>
+          </>
+        )}
       </>
     </ContentCard>
   )
