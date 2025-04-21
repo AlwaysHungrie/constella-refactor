@@ -66,3 +66,11 @@ npm run build
 npm install -g serve
 pm2 start serve --name "docusaurus" -- -s build -p 3005
 pm2 save
+
+> running nextjs app with pm2
+
+pm2 start npm --name "verifier frontend" -- start -- -p 3000
+
+> running nodejs with pm2
+
+pm2 start npm --name "verifier backend" -- start

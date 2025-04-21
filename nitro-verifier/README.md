@@ -1,5 +1,8 @@
 # Nitro Verifier
 
+Website:[https://pineappl.xyz/](https://pineappl.xyz/)
+Server:[https://nitro-verifier.pineappl.xyz/](https://nitro-verifier.pineappl.xyz/)
+
 This tool checks the nitro enclave attestation document i.e. an attestation certificate that is generated any server that is running inside a nitro enabled instance and using [nitriding](https://github.com/brave/nitriding-daemon) to communicate over https. 
 
 A nitro enclave attestation contains
