@@ -9,7 +9,8 @@ import { useWalletStore } from '@/stores/walletStore'
 
 const isValidDomain = (domain: string) => {
   const urlRegex = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/
-  return urlRegex.test(domain)
+  const localhostRegex = /^(http:\/\/)?localhost(:[0-9]+)?(\/[\w.-]*)*\/?$/
+  return urlRegex.test(domain) || localhostRegex.test(domain)
 }
 
 export const CreateWalletForm = () => {

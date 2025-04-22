@@ -1,6 +1,8 @@
 import axios from 'axios'
 
-const API_URL = process.env.NEXT_PUBLIC_API_HOST
+export const API_URL = process.env.NEXT_PUBLIC_API_HOST
+export const CONSTELLA_FRONTEND_URL = process.env.NEXT_PUBLIC_CONSTELLA_FRONTEND_URL || 'https://constella.one'
+export const CONSTELLA_BACKEND_URL = process.env.NEXT_PUBLIC_CONSTELLA_BACKEND_URL || 'https://api.constella.one'
 
 export const postRequest = async (path: string, body: object) => {
   const response = await axios.post(`${API_URL}/api/${path}`, body)

@@ -21,6 +21,25 @@ export const handleGetAgentWallets = async (_req: Request, res: Response) => {
   return res.status(200).json(wallets)
 }
 
+export const handleGetAgentWallet = async (_req: Request, res: Response) => {
+  const req = _req as AuthenticatedRequest
+  const { walletAddress } = req.params
+
+  const wallet = await prisma.agentWallet.findUnique({
+    where: {
+      walletAddress: walletAddress,
+    },
+    select: {
+      walletAddress: true,
+      domain: true,
+      systemPrompt: true,
+      ownerAddress: true,
+    },
+  })
+
+  return res.status(200).json(wallet)
+}
+
 export const createAgentWalletSchema = Joi.object({
   domain: Joi.string().required(),
   systemPrompt: Joi.string().required(),

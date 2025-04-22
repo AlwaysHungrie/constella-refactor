@@ -1,24 +1,55 @@
 'use client'
 import useUserStore from '@/stores/userStore'
-import SidebarHeader from './sidebar/header'
-import ConnectWallet from './connectWallet'
-
-const CodeHighlight = ({ children }: { children: React.ReactNode }) => (
-  <span className="bg-red-100 text-gray-800 font-mono px-2 py-0.5 rounded text-sm">
-    {children}
-  </span>
-)
-
+import SidebarHeader from '../sidebar/header'
+import ConnectWallet from '../wallet/connectWallet'
+import CodeHighlight from '../codeHighlight'
+import { usePrivy } from '@privy-io/react-auth'
+import { useCallback, useEffect } from 'react'
+import { postRequest } from '@/utils/api'
 export default function ProjectInfo() {
-  const { token, address } = useUserStore()
+  const { authenticated, user, getAccessToken } = usePrivy()
+  const { setToken, token, address } = useUserStore()
+
+  const handleConnect = useCallback(
+    async (address: string) => {
+      const accessToken = await getAccessToken()
+      try {
+        const response = await postRequest('auth/connect', {
+          address,
+          privyAccessToken: accessToken,
+        })
+
+        if (!response.token) {
+          throw new Error('Server did not return a token')
+        }
+
+        setToken(response.token, address)
+      } catch (error) {
+        console.error(error)
+      }
+    },
+    [getAccessToken, setToken]
+  )
+
+  useEffect(() => {
+    if (!authenticated) return
+    if (!user || !user.wallet || !user.wallet.address) return
+    if (token && address && user.wallet.address === address) return
+
+    handleConnect(user.wallet.address)
+  }, [authenticated, user, token, address, handleConnect])
+
+  if (authenticated && user) {
+    return null
+  }
 
   if (token && address) {
     return null
   }
 
   return (
-    <div className="flex h-full w-full items-center justify-center bg-gray-900/80 backdrop-blur-sm">
-      <div className="bg-white shadow-lg rounded-lg p-6 max-w-lg flex flex-col max-h-[32rem] overflow-y-auto">
+    <div className="flex h-full w-full items-center justify-center backdrop-blur-sm">
+      <div className="bg-white shadow-md rounded-md p-6 max-w-lg flex flex-col max-h-[32rem] overflow-y-auto border border-gray-200">
         <div className="flex flex-col mx-auto items-center">
           <SidebarHeader />
         </div>
@@ -61,8 +92,7 @@ export default function ProjectInfo() {
 
           <p className="text-sm text-gray-500 italic">
             Note: Agents and messages are not permanently stored. If you refresh
-            the page, you&apos;ll need to recreate your agents and lose all
-            previous messages.
+            the page, you&apos;ll lose all your previous messages.
           </p>
 
           <ConnectWallet />

@@ -4,6 +4,7 @@ import {
   createAgentWalletSchema,
   handleCreateAgentWallet,
   handleDeleteAgentWallet,
+  handleGetAgentWallet,
   handleGetAgentWallets,
 } from '../handlers/walletHandlers'
 import { verifyJwtToken } from '../middleware/jwt'
@@ -14,6 +15,11 @@ walletRouter.get(
   '/',
   verifyJwtToken,
   asyncHandler(handleGetAgentWallets),
+)
+
+walletRouter.get(
+  '/:walletAddress',
+  asyncHandler(handleGetAgentWallet),
 )
 
 walletRouter.post(

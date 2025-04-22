@@ -9,7 +9,7 @@ export default function SidebarFooter() {
           href: 'https://constella.one',
         },
         {
-          label: 'Create Agent',
+          label: 'Create Your Agent',
           href: 'https://docs.constella.one',
         },
         {
@@ -18,7 +18,7 @@ export default function SidebarFooter() {
         },
         {
           label: 'Verify Constella',
-          href: 'https://pineapple.xyz',
+          href: 'https://pineappl.xyz',
         },
         {
           label: 'Twitter',

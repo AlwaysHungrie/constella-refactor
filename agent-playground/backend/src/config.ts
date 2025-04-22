@@ -4,7 +4,7 @@ import { PrismaClient } from './generated/prisma/client'
 dotenv.config()
 const prisma = new PrismaClient()
 
-const PORT = process.env.PORT || 5001
+const PORT = process.env.PORT || 3003
 const JWT_SECRET = process.env.JWT_SECRET || 'playground-jwt-secret'
 
 const PRIVY_APP_ID = process.env.PRIVY_APP_ID
