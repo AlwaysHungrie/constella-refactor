@@ -7,7 +7,7 @@ mod storage;
 use std::path::PathBuf;
 
 use http_body_util::{BodyExt, Full};
-use hyper::{body::Bytes, Request, StatusCode};
+use hyper::{body::Bytes, Request};
 use hyper_util::rt::TokioIo;
 use tokio_util::compat::{FuturesAsyncReadCompatExt, TokioAsyncReadCompatExt};
 
@@ -85,10 +85,6 @@ struct Args {
     #[clap(long, default_value_t = NOTARY_TLS)]
     notary_tls: bool,
 
-    /// Output path for the presentation file
-    #[clap(long, default_value = "presentation.tlsn")]
-    presentation_path: PathBuf,
-
     #[command(subcommand)]
     command: Command,
 }
@@ -149,6 +145,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 &args, 
                 &request_payload, 
                 headers,
+                api_key.clone(),
                 user_dir.clone(),
                 output_prefix.clone(),
             ).await
@@ -160,6 +157,7 @@ async fn notarize_request(
     args: &Args,
     request_payload: &Value,
     headers: Vec<(String, String)>,
+    api_key: String,
     user_dir: PathBuf,
     output_prefix: String,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -167,7 +165,7 @@ async fn notarize_request(
     let json_payload = serde_json::to_string(request_payload)?;
     let bytes = Bytes::from(json_payload);
     
-    notarize_request_with_body(args, request_payload, headers, bytes.to_vec(), user_dir, output_prefix).await
+    notarize_request_with_body(args, request_payload, headers, bytes.to_vec(), api_key, user_dir, output_prefix).await
 }
 
 async fn notarize_request_with_body(
@@ -175,6 +173,7 @@ async fn notarize_request_with_body(
     _request_payload: &Value, // Only used for debug printing
     headers: Vec<(String, String)>,
     body: Vec<u8>,
+    api_key: String,
     user_dir: PathBuf,
     output_prefix: String,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -194,14 +193,12 @@ async fn notarize_request_with_body(
 
     let Accepted {
         io: notary_connection,
-        id: session_id,
+        id: _session_id,
         ..
     } = notary_client
         .request_notarization(notarization_request)
         .await
         .expect("Could not connect to notary. Make sure it is running.");
-
-    println!("Notarization session started with ID: {}", session_id);
 
     let server_name: &str = args.host.as_str();
 
@@ -260,16 +257,12 @@ async fn notarize_request_with_body(
     // Build the final request
     let request = request_builder.body(Full::new(body_bytes))?;
 
-    println!("Starting an MPC TLS connection with {}", args.host);
-
     // Send the request and wait for the response
     let response = request_sender.send_request(request).await?;
 
-    println!("Got a response: {}", response.status());
-
-    if response.status() != StatusCode::OK {
-        println!("Error status: {}", response.status());
-    }
+    // if response.status() != StatusCode::OK {
+    //     println!("Error status: {}", response.status());
+    // }
 
     // Collect the full response body
     let body_bytes = response.collect().await?.to_bytes();
@@ -297,11 +290,20 @@ async fn notarize_request_with_body(
     let sent_transcript = prover.transcript().sent();
     let recv_transcript = prover.transcript().received();
 
-    // let sent_public_ranges = RangeSet::from([(0..sent_transcript.len())]);
-    // let recv_public_ranges = RangeSet::from([(0..recv_transcript.len())]);
+    let private_words_bytes: Vec<Vec<u8>> = api_key
+        .split(';')
+        .map(|s| s.as_bytes().to_vec())
+        .collect();
 
-    let sent_public_ranges = RangeSet::from(0..sent_transcript.len());
-    let recv_public_ranges = RangeSet::from(0..recv_transcript.len());
+    let private_word_refs: Vec<&[u8]> = private_words_bytes.iter()
+        .map(|v| v.as_slice())
+        .collect();
+
+    let (sent_public_ranges, _) = find_ranges(sent_transcript, &private_word_refs);
+    let (recv_public_ranges, _) = find_ranges(recv_transcript, &private_word_refs);
+
+    // let sent_public_ranges = RangeSet::from(0..sent_transcript.len());
+    // let recv_public_ranges = RangeSet::from(0..recv_transcript.len());
 
     // Commit to the transcript
     let mut builder = TranscriptCommitConfig::builder(prover.transcript());
@@ -314,8 +316,6 @@ async fn notarize_request_with_body(
     let request_config = RequestConfig::builder().build()?;
 
     let (attestation, secrets) = prover.finalize(&request_config).await?;
-
-    println!("Notarization complete!");
 
     // Build the presentation
     let mut builder = secrets.transcript_proof_builder();
@@ -333,7 +333,6 @@ async fn notarize_request_with_body(
     let presentation: Presentation = builder.build()?;
 
     let storage = StorageService::new(BUCKET_NAME, REGION);
-    println!("Uploading presentation to S3 {}", user_dir.display());
     let bucket_path = storage.upload_presentation(&presentation, &user_dir, &output_prefix).await?;
 
     // Prepare final response
@@ -345,4 +344,64 @@ async fn notarize_request_with_body(
     println!("{}", serde_json::to_string(&response_json)?);
     
     Ok(())
+}
+
+fn find_ranges(seq: &[u8], sub_seq: &[&[u8]]) -> (RangeSet<usize>, RangeSet<usize>) {
+    let mut private_ranges = Vec::new();
+    
+    // Find all occurrences of each private word
+    for s in sub_seq {
+        let mut start_idx = 0;
+        while let Some(idx) = find_subsequence(&seq[start_idx..], s) {
+            let abs_idx = start_idx + idx;
+            private_ranges.push(abs_idx..(abs_idx + s.len()));
+            start_idx = abs_idx + 1; // Move past the current match to find next occurrence
+        }
+    }
+
+    // Sort and merge overlapping ranges
+    let mut sorted_ranges = private_ranges.clone();
+    sorted_ranges.sort_by_key(|r| r.start);
+    
+    let mut merged_private = Vec::new();
+    if !sorted_ranges.is_empty() {
+        let mut current = sorted_ranges[0].clone();
+        
+        for range in sorted_ranges.iter().skip(1) {
+            if range.start <= current.end {
+                // Ranges overlap, merge them
+                current.end = current.end.max(range.end);
+            } else {
+                // No overlap, push current range and start new one
+                merged_private.push(current);
+                current = range.clone();
+            }
+        }
+        merged_private.push(current);
+    }
+
+    // Find public ranges (gaps between private ranges)
+    let mut public_ranges = Vec::new();
+    let mut last_end = 0;
+    
+    for r in &merged_private {
+        if r.start > last_end {
+            public_ranges.push(last_end..r.start);
+        }
+        last_end = r.end;
+    }
+    
+    if last_end < seq.len() {
+        public_ranges.push(last_end..seq.len());
+    }
+
+    (
+        RangeSet::from(public_ranges),
+        RangeSet::from(merged_private),
+    )
+}
+
+fn find_subsequence(haystack: &[u8], needle: &[u8]) -> Option<usize> {
+    haystack.windows(needle.len())
+        .position(|window| window == needle)
 }

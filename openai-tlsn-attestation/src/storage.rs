@@ -49,7 +49,7 @@ impl StorageService {
             .send()
             .await?;
 
-        Ok(format!("s3://{}/{}", self.bucket_name, key))
+        Ok(format!("https://{}.s3.amazonaws.com/{}", self.bucket_name, key))
     }
 }
 
