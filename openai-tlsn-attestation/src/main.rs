@@ -27,9 +27,9 @@ const USER_AGENT: &str = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KH
 const CONTENT_TYPE: &str = "application/json";
 const MAX_SENT_DATA: usize = 16384; // 16KB
 const MAX_RECV_DATA: usize = 16384; // 64KB
-const NOTARY_HOST: &str = "127.0.0.1";
-const NOTARY_PORT: u16 = 7047;
-const NOTARY_TLS: bool = false;
+const NOTARY_HOST: &str = "notary.pineappl.xyz";
+const NOTARY_PORT: u16 = 443;
+const NOTARY_TLS: bool = true;
 
 #[derive(Parser, Debug)]
 #[command(version, about = "TLS Notarization tool for HTTP requests", long_about = None)]

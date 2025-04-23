@@ -16,6 +16,7 @@ source $HOME/.cargo/env
 git clone https://github.com/tlsnotary/tlsn.git
 cd tlsn/crates/notary/server/
 
+vim config/config.yaml
 > change tls enabled to false, max-sent to 16384, max-recv to 16384
 
 cargo build --release
@@ -31,11 +32,11 @@ curl -I localhost:7047
 
 > configure nginx
 
-sudo vim /etc/nginx/sites-available/notary.pineappl.xyz
+sudo vim /etc/nginx/sites-available/notary1.pineappl.xyz
 
 server {
     listen 80;
-    server_name notary.pineappl.xyz www.notary.pineappl.xyz;
+    server_name notary1.pineappl.xyz;
 
     location / {
         proxy_pass http://localhost:7047;
@@ -51,11 +52,11 @@ server {
     }
 }
 
-sudo ln -s /etc/nginx/sites-available/notary.pineappl.xyz /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/notary1.pineappl.xyz /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
 
-sudo certbot --nginx -d notary.pineappl.xyz -d www.notary.pineappl.xyz
+sudo certbot --nginx -d notary1.pineappl.xyz
 sudo systemctl restart nginx
 
 sudo certbot renew --dry-run
