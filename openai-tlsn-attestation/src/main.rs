@@ -2,6 +2,8 @@
 // an HTTP request sent to OpenAI's API. The attestation and secrets are saved to
 // disk.
 
+mod storage;
+
 use std::path::PathBuf;
 
 use http_body_util::{BodyExt, Full};
@@ -17,6 +19,7 @@ use rangeset::RangeSet;
 
 use clap::{Parser, Subcommand};
 use serde_json::{json, Value};
+use storage::StorageService;
 
 // OpenAI API settings
 const OPENAI_API_HOST: &str = "api.openai.com";
@@ -30,6 +33,10 @@ const MAX_RECV_DATA: usize = 16384; // 64KB
 const NOTARY_HOST: &str = "notary.pineappl.xyz";
 const NOTARY_PORT: u16 = 443;
 const NOTARY_TLS: bool = true;
+
+// AWS S3 settings
+const BUCKET_NAME: &str = "tlsn-notary-test";
+const REGION: &str = "ap-south-1";
 
 #[derive(Parser, Debug)]
 #[command(version, about = "TLS Notarization tool for HTTP requests", long_about = None)]
@@ -101,36 +108,14 @@ enum Command {
         /// Message to send to the model
         #[clap(long, default_value = "Hello! Can you introduce yourself?")]
         message: String,
-    },
-    
-    /// Make a custom HTTP request with a JSON payload
-    CustomJson {
-        /// Authorization header value (e.g., "Bearer YOUR_TOKEN")
+
+        // User directory
         #[clap(long)]
-        authorization: Option<String>,
-        
-        /// Raw JSON payload as a string
+        user_dir: PathBuf,
+
+        // Output prefix
         #[clap(long)]
-        payload: String,
-        
-        /// Additional headers in format "Key: Value"
-        #[clap(long)]
-        headers: Vec<String>,
-    },
-    
-    /// Make a custom HTTP request with form data
-    CustomForm {
-        /// Authorization header value (e.g., "Bearer YOUR_TOKEN")
-        #[clap(long)]
-        authorization: Option<String>,
-        
-        /// Form fields in format "key=value"
-        #[clap(long)]
-        fields: Vec<String>,
-        
-        /// Additional headers in format "Key: Value"
-        #[clap(long)]
-        headers: Vec<String>,
+        output_prefix: String,
     },
 }
 
@@ -141,7 +126,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
     
     match &args.command {
-        Command::OpenAI { api_key, model, message } => {
+        Command::OpenAI { api_key, model, message, user_dir, output_prefix } => {
             // Create the request payload for OpenAI
             let request_payload = json!({
                 "model": model,
@@ -163,80 +148,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             notarize_request(
                 &args, 
                 &request_payload, 
-                headers
-            ).await
-        },
-        
-        Command::CustomJson { authorization, payload, headers } => {
-            // Parse the JSON payload
-            let request_payload: Value = serde_json::from_str(payload)
-                .map_err(|e| format!("Invalid JSON payload: {}", e))?;
-            
-            // Prepare headers
-            let mut header_map = vec![
-                ("Content-Type".to_string(), args.content_type.clone()),
-                ("Accept".to_string(), "application/json".to_string()),
-            ];
-            
-            // Add authorization if provided
-            if let Some(auth) = authorization {
-                header_map.push(("Authorization".to_string(), auth.clone()));
-            }
-            
-            // Add custom headers
-            for header in headers {
-                if let Some((key, value)) = header.split_once(':') {
-                    header_map.push((key.trim().to_string(), value.trim().to_string()));
-                } else {
-                    eprintln!("Warning: Ignoring malformed header: {}", header);
-                }
-            }
-            
-            notarize_request(
-                &args,
-                &request_payload,
-                header_map
-            ).await
-        },
-        
-        Command::CustomForm { authorization, fields, headers } => {
-            // Prepare form data
-            let mut form_data = String::new();
-            for (i, field) in fields.iter().enumerate() {
-                if i > 0 {
-                    form_data.push('&');
-                }
-                form_data.push_str(field);
-            }
-            
-            // Create a placeholder JSON value since we're sending form data
-            let placeholder = json!({});
-            
-            // Prepare headers
-            let mut header_map = vec![
-                ("Content-Type".to_string(), "application/x-www-form-urlencoded".to_string()),
-            ];
-            
-            // Add authorization if provided
-            if let Some(auth) = authorization {
-                header_map.push(("Authorization".to_string(), auth.clone()));
-            }
-            
-            // Add custom headers
-            for header in headers {
-                if let Some((key, value)) = header.split_once(':') {
-                    header_map.push((key.trim().to_string(), value.trim().to_string()));
-                } else {
-                    eprintln!("Warning: Ignoring malformed header: {}", header);
-                }
-            }
-            
-            // Use the form data as the request body instead of JSON
-            notarize_request_with_body(
-                &args,
-                &placeholder, // Ignored in this case
-                header_map,
-                form_data.into_bytes()
+                headers,
+                user_dir.clone(),
+                output_prefix.clone(),
             ).await
         },
     }
@@ -246,12 +160,14 @@ async fn notarize_request(
     args: &Args,
     request_payload: &Value,
     headers: Vec<(String, String)>,
+    user_dir: PathBuf,
+    output_prefix: String,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Serialize the request payload to JSON
     let json_payload = serde_json::to_string(request_payload)?;
     let bytes = Bytes::from(json_payload);
     
-    notarize_request_with_body(args, request_payload, headers, bytes.to_vec()).await
+    notarize_request_with_body(args, request_payload, headers, bytes.to_vec(), user_dir, output_prefix).await
 }
 
 async fn notarize_request_with_body(
@@ -259,6 +175,8 @@ async fn notarize_request_with_body(
     _request_payload: &Value, // Only used for debug printing
     headers: Vec<(String, String)>,
     body: Vec<u8>,
+    user_dir: PathBuf,
+    output_prefix: String,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Build a client to connect to the notary server
     let notary_client = NotaryClient::builder()
@@ -358,10 +276,15 @@ async fn notarize_request_with_body(
     let body_str = String::from_utf8_lossy(&body_bytes);
     
     // Pretty print the response if it's valid JSON
-    if let Ok(parsed_json) = serde_json::from_str::<serde_json::Value>(&body_str) {
-        println!("Response: {}", serde_json::to_string_pretty(&parsed_json)?);
+    let parsed_json: serde_json::Value;
+    if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(&body_str) {
+        parsed_json = parsed;
+        // println!("Response: {}", serde_json::to_string_pretty(&parsed_json)?);
     } else {
-        println!("Raw response: {}", body_str);
+        // println!("Raw response: {}", body_str);
+        parsed_json = serde_json::json!({
+            "error": body_str
+        });
     }
 
     // The prover task should be done now, so we can await it
@@ -409,11 +332,17 @@ async fn notarize_request_with_body(
 
     let presentation: Presentation = builder.build()?;
 
-    // Write the presentation to disk
-    std::fs::write(&args.presentation_path, bincode::serialize(&presentation)?)?;
+    let storage = StorageService::new(BUCKET_NAME, REGION);
+    println!("Uploading presentation to S3 {}", user_dir.display());
+    let bucket_path = storage.upload_presentation(&presentation, &user_dir, &output_prefix).await?;
 
-    println!("Presentation built successfully!");
-    println!("The presentation has been written to `{}`.", args.presentation_path.display());
+    // Prepare final response
+    let response_json = serde_json::json!({
+        "attestation_url": bucket_path,
+        "llm_response": parsed_json,
+    });
+
+    println!("{}", serde_json::to_string(&response_json)?);
     
     Ok(())
 }
