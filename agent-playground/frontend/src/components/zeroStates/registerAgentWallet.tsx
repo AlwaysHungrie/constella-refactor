@@ -1,7 +1,7 @@
 'use client'
 import useUserStore from '@/stores/userStore'
 import { useAgentWalletStore } from '@/stores/agentWalletStore'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { API_URL, CONSTELLA_BACKEND_URL } from '@/utils/api'
 import CodeHighlight from '../codeHighlight'
 import { usePrivy } from '@privy-io/react-auth'
@@ -67,6 +67,13 @@ export default function RegisterAgentWallet() {
     setLastUsedAgentWalletAddress,
     setAgentWallet,
   ])
+
+  useEffect(() => {
+    console.log('lastUsedAgentWalletAddress', lastUsedAgentWalletAddress)
+    if (lastUsedAgentWalletAddress) {
+      setWalletAddressInput(lastUsedAgentWalletAddress)
+    }
+  }, [lastUsedAgentWalletAddress])
 
   if (!authenticated || !user) {
     return null

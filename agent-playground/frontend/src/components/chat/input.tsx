@@ -3,12 +3,15 @@
 import { useCallback, useState } from 'react'
 import { HiOutlinePaperAirplane } from 'react-icons/hi2'
 import useMessageStore from '@/stores/messageStore'
+import useUserStore from '@/stores/userStore'
+import { authorizedPostRequest } from '@/utils/api'
 
 export default function ChatInput({
   onScrollBottom,
 }: {
   onScrollBottom: () => void
 }) {
+  const { token } = useUserStore()
   const [message, setMessage] = useState('')
   const { addMessage, messages, updateMessage } = useMessageStore()
   const lastMessage = messages[messages.length - 1]
@@ -16,7 +19,10 @@ export default function ChatInput({
 
   const handleSend = useCallback(
     async (userMessage: string) => {
-      if (!allowSend) return
+      if (!allowSend || !token) return
+      if (!process.env.NEXT_PUBLIC_OPENAI_API_KEY) {
+        throw new Error('NEXT_PUBLIC_OPENAI_API_KEY is not set')
+      }
 
       addMessage({
         id: Math.random().toString(36).substring(2, 15),
@@ -37,18 +43,32 @@ export default function ChatInput({
         state: 'pending',
       })
 
-      setTimeout(() => {
-        onScrollBottom()
-      }, 100)
-
       try {
-        await new Promise((resolve) => setTimeout(resolve, 1000))
+        // await new Promise((resolve) => setTimeout(resolve, 1000))
+        // updateMessage(botMessageId, {
+        //   content: 'Hello, how can I help you today?',
+        //   state: 'sent',
+        // })
+
+        const response = await authorizedPostRequest(token, 'message', {
+          message: userMessage,
+          apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
+        })
+
+        console.log('response', response)
+        const { attestation_url, llm_response } = response.result
+        const message = llm_response?.choices[0]?.message.content
         updateMessage(botMessageId, {
-          content: 'Hello, how can I help you today?',
+          content: message,
           state: 'sent',
+          attestationUrl: attestation_url,
         })
       } catch (error) {
         console.error(error)
+        updateMessage(botMessageId, {
+          content: 'Error',
+          state: 'error',
+        })
       }
     },
     [addMessage, updateMessage, allowSend]

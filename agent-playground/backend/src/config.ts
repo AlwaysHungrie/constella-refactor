@@ -15,6 +15,11 @@ if (!PRIVY_APP_ID || !PRIVY_APP_SECRET || !PRIVY_PUBLIC_KEY) {
   throw new Error('privy env variables are not set')
 }
 
+const RUST_BINARY_PATH = process.env.RUST_BINARY_PATH
+if (!RUST_BINARY_PATH) {
+  throw new Error('rust binary path is not set')
+}
+
 export const config = {
   port: PORT,
   jwtSecret: JWT_SECRET,
@@ -24,4 +29,5 @@ export const config = {
     appSecret: PRIVY_APP_SECRET,
     publicKey: PRIVY_PUBLIC_KEY,
   },
+  rustBinaryPath: RUST_BINARY_PATH,
 }

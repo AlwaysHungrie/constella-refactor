@@ -6,6 +6,7 @@ export interface Message {
   role: 'user' | 'assistant'
   createdAt: Date
   state: 'pending' | 'sent' | 'received' | 'error'
+  attestationUrl?: string
 }
 
 interface MessageStore {
