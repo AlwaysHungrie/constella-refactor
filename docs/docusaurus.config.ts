@@ -125,7 +125,7 @@ const config: Config = {
     [
       'posthog-docusaurus',
       {
-        apiKey: 'phc_QgawuhmdSI0cZfaKinC2ngMsTD43i9OEV9aEzskhaQr',
+        apiKey: 'phc_9vQymoO8c4YNHGUVE0ocLNxBZZtDrksv2kewmUrLKFf',
         appUrl: 'https://eu.i.posthog.com',
         enableInDevelopment: false,
       },
