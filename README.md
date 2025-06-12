@@ -1,4 +1,9 @@
+> This is an ongoing refactor of the original [Constella repo](https://github.com/AlwaysHungrie/constella)
+> PCR values and verification instructions will be changed. Some links are offline
+
 # Constella
+
+[Docs](https://docs.constella.one/)   |   [Site - Offline](https://constella.one) | [TEE Verifier - Offline](https://nitro-verifier.pineappl.xyz/)
 
 Wallet for Autonomous Agents
 
