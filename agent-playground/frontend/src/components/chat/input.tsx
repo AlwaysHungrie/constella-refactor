@@ -44,20 +44,14 @@ export default function ChatInput({
       })
 
       try {
-        // await new Promise((resolve) => setTimeout(resolve, 1000))
-        // updateMessage(botMessageId, {
-        //   content: 'Hello, how can I help you today?',
-        //   state: 'sent',
-        // })
-
         const response = await authorizedPostRequest(token, 'message', {
           message: userMessage,
           apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
         })
 
-        console.log('response', response)
         const { attestation_url, llm_response } = response.result
         const message = llm_response?.choices[0]?.message.content
+        
         updateMessage(botMessageId, {
           content: message,
           state: 'sent',

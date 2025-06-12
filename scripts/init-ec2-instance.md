@@ -6,6 +6,8 @@ export PUBLIC_IP=
 export EC2_DNS="ec2-$(echo $PUBLIC_IP | tr '.' '-').ap-south-1.compute.amazonaws.com"
 ssh -i CliGeneratedConstellaKey.pem ubuntu@$EC2_DNS
 
+ssh -i CliGeneratedPineapplKey.pem ubuntu@$EC2_DNS
+
 
 > install nginx and configure with domain docs.constella.one
 > requires dns records to be set "A docs.constella.one -> $PUBLIC_IP" and "A www.docs.constella.one -> docs.constella.one"
@@ -18,9 +20,8 @@ sudo ufw enable
 
 sudo apt install certbot python3-certbot-nginx -y
 
-sudo touch /etc/nginx/sites-available/docs.constella.one
+sudo vim /etc/nginx/sites-available/docs.constella.one
 
-sudo tee /etc/nginx/sites-available/docs.constella.one > /dev/null <<'EOF'
 server {
     listen 80;
     server_name docs.constella.one www.docs.constella.one;
@@ -28,10 +29,10 @@ server {
     location / {
         proxy_pass http://localhost:3005;
         proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
-        proxy_set_header Host \$host;
-        proxy_cache_bypass \$http_upgrade;
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
     }
 }
 EOF

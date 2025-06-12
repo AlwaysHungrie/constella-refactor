@@ -73,7 +73,7 @@ const config: Config = {
           items: [
             {
               label: 'Quickstart',
-              to: '/category/quickstart',
+              to: '/quickstart/getting-a-wallet',
             },
             {
               label: 'Wallet',
